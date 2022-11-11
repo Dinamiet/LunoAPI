@@ -1,0 +1,22 @@
+{
+  "name": "lunoapi",
+  "version": "1.0.0",
+  "description": "Luno API",
+  "main": "luno_api.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/dinamiet/lunoapi.git"
+  },
+  "keywords": [
+    "Luno"
+  ],
+  "author": "Dinamiet",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://bitbucket.org/dinamiet/lunoapi/issues"
+  },
+  "homepage": "https://bitbucket.org/dinamiet/lunoapi#readme"
+}
