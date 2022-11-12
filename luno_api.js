@@ -185,6 +185,18 @@ class LunoClient
 			}, reject);
 		});
 	}
+
+	getTicker(pair)
+	{
+		return new Promise((resolve, reject) => {
+			getRequest('ticker', {pair}, (response) => {
+				if (response.error_code)
+					reject(response);
+				else
+					resolve(response);
+			}, reject);
+		});
+	}
 };
 
 module.exports = { LunoClient }
