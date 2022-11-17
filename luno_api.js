@@ -103,17 +103,15 @@ class LunoClient
 			authenticatedGetRequest('listorders', this.auth, {state:"PENDING", pair, limit: 1000}, (response) => {
 				if (response.error_code)
 					reject(response);
-				else
-				{
-					const pendingOrders= [];
-					for (const order of response.orders)
-					{
+					if (response.orders) {
+						for (const order of response.orders) {
 						pendingOrders.push({
 							id: order.order_id,
 							type: order.type,
 							price: parseFloat(order.limit_price),
 							amount: parseFloat(order.limit_volume)
 						});
+						}
 					}
 					resolve(pendingOrders);
 				}
