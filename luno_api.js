@@ -108,7 +108,8 @@ class LunoClient {
 								id: order.order_id,
 								type: order.type,
 								price: parseFloat(order.limit_price),
-								amount: parseFloat(order.limit_volume)
+								amount: parseFloat(order.limit_volume),
+								filled: parseFloat(order.base),
 							});
 						}
 					}
