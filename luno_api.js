@@ -120,7 +120,7 @@ class LunoClient {
 		});
 	}
 
-	canclePendingOrder(orderID) {
+	cancelPendingOrder(orderID) {
 		return new Promise((resolve, reject) => {
 			postRequest('stoporder', this.auth, { order_id: orderID }, (response) => {
 				if (response.error_code)
