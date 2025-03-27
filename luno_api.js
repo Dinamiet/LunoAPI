@@ -11,7 +11,7 @@ const getRequest = (endpoint, isExchange, data, succ, err) => {
 		path: "/api" + (isExchange ? "/exchange/" : "/") + "1/" + endpoint + "?" + parameters.toString(),
 		method: 'GET',
 		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded'
+			'Content-Type': 'application/json'
 		}
 	}
 
@@ -38,7 +38,7 @@ const authenticatedGetRequest = (endpoint, isExchange, auth, data, succ, err) =>
 		path: "/api" + (isExchange ? "/exchange/" : "/") + "1/" + endpoint + "?" + parameters.toString(),
 		method: 'GET',
 		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded',
+			'Content-Type': 'application/json',
 			'Authorization': 'Basic ' + authString
 		}
 	}
