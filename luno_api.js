@@ -1,13 +1,14 @@
 const http = require('https');
 const { URLSearchParams } = require('url');
+
 const BASE_URL = "api.luno.com"
 
-const getRequest = (endpoint, data, succ, err) => {
+const getRequest = (endpoint, isExchange, data, succ, err) => {
 	const parameters = new URLSearchParams(data);
 	const options = {
 		hostname: BASE_URL,
 		port: 443,
-		path: "/api/1/" + endpoint + "?" + parameters.toString(),
+		path: "/api" + (isExchange ? "/exchange/" : "/") + "1/" + endpoint + "?" + parameters.toString(),
 		method: 'GET',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded'
@@ -28,13 +29,13 @@ const getRequest = (endpoint, data, succ, err) => {
 	req.end();
 };
 
-const authenticatedGetRequest = (endpoint, auth, data, succ, err) => {
+const authenticatedGetRequest = (endpoint, isExchange, auth, data, succ, err) => {
 	const authString = Buffer.from(auth.username + ":" + auth.password).toString('base64');
 	const parameters = new URLSearchParams(data);
 	const options = {
 		hostname: BASE_URL,
 		port: 443,
-		path: "/api/1/" + endpoint + "?" + parameters.toString(),
+		path: "/api" + (isExchange ? "/exchange/" : "/") + "1/" + endpoint + "?" + parameters.toString(),
 		method: 'GET',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
@@ -97,7 +98,7 @@ class LunoClient {
 
 	getPendingOrders(pair) {
 		return new Promise((resolve, reject) => {
-			authenticatedGetRequest('listorders', this.auth, { state: "PENDING", pair, limit: 1000 }, (response) => {
+			authenticatedGetRequest('listorders', false, this.auth, { state: "PENDING", pair, limit: 1000 }, (response) => {
 				if (response.error_code)
 					reject(response);
 				else {
@@ -133,7 +134,7 @@ class LunoClient {
 
 	getBalances() {
 		return new Promise((resolve, reject) => {
-			authenticatedGetRequest('balance', this.auth, {}, (response) => {
+			authenticatedGetRequest('balance', false, this.auth, {}, (response) => {
 				if (response.error_code)
 					reject(response);
 				else {
@@ -170,7 +171,7 @@ class LunoClient {
 
 	getAllTickers() {
 		return new Promise((resolve, reject) => {
-			getRequest('tickers', {}, (response) => {
+			getRequest('tickers', false, {}, (response) => {
 				if (response.error_code)
 					reject(response);
 				else
@@ -181,7 +182,7 @@ class LunoClient {
 
 	getTicker(pair) {
 		return new Promise((resolve, reject) => {
-			getRequest('ticker', { pair }, (response) => {
+			getRequest('ticker', false, { pair }, (response) => {
 				if (response.error_code)
 					reject(response);
 				else
