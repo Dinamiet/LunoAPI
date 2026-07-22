@@ -246,6 +246,17 @@ class LunoClient {
 
 		return new CandleStream(pair, startDate, endDate, duration);
 	}
+
+	getOrderBook(pair) {
+		return new Promise((resolve, reject) => {
+			getRequest("orderbook_top", false, { pair }, (response) => {
+				if (response.error_code)
+					reject(response);
+				else
+					resolve(response);
+			}, reject);
+		});
+	}
 };
 
 module.exports = { LunoClient }
