@@ -103,6 +103,18 @@ class LunoClient {
 		this.auth = { username: key, password: secret };
 	}
 
+	AccountTypes = {
+		Transactional: "TRANSACTIONAL",
+		Spot: "SPOT",
+		SpotMargin: "SPOT_MARGIN",
+		Savings: "SAVINGS",
+		Bundle: "BUNDLE",
+		Staking: "STAKING",
+		Earn: "EARN",
+		Prediction: "PREDICTION",
+		ExternalTokenizing: "EXTERNAL_TOKENISING"
+	};
+
 	async getPendingOrders(pair) {
 		const response = await authenticatedGetRequest('listorders', false, this.auth, { state: "PENDING", pair, limit: 1000 });
 		if (response.error_code)
@@ -133,8 +145,8 @@ class LunoClient {
 			return response;
 	}
 
-	async getBalances() {
-		const response = await authenticatedGetRequest('balance', false, this.auth, {});
+	async getBalances(accountType) {
+		const response = await authenticatedGetRequest('balance', false, this.auth, { account_type: accountType });
 		if (response.error_code)
 			throw response;
 		else {
@@ -148,7 +160,6 @@ class LunoClient {
 			}
 			return wallet;
 		}
-
 	}
 
 	async postLimitOrder(action, amount, price, assetpair, priceDecimals, volumeDecimals) {
