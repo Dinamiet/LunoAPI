@@ -4,86 +4,92 @@ const { URLSearchParams } = require('url');
 
 const BASE_URL = "api.luno.com"
 
-const getRequest = (endpoint, isExchange, data, succ, err) => {
-	const parameters = new URLSearchParams(data);
-	const options = {
-		hostname: BASE_URL,
-		port: 443,
-		path: "/api" + (isExchange ? "/exchange/" : "/") + "1/" + endpoint + "?" + parameters.toString(),
-		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json'
+const getRequest = (endpoint, isExchange, data) => {
+	return new Promise((resolve, reject) => {
+		const parameters = new URLSearchParams(data);
+		const options = {
+			hostname: BASE_URL,
+			port: 443,
+			path: "/api" + (isExchange ? "/exchange/" : "/") + "1/" + endpoint + "?" + parameters.toString(),
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json'
+			}
 		}
-	}
 
-	const req = http.request(options, (res) => {
-		var data = "";
-		res.on('data', (d) => {
-			data += d;
-		});
+		const req = http.request(options, (res) => {
+			var data = "";
+			res.on('data', (d) => {
+				data += d;
+			});
 
-		res.on('end', () => {
-			succ(JSON.parse(data));
+			res.on('end', () => {
+				resolve(JSON.parse(data));
+			});
 		});
+		req.on('error', reject);
+		req.end();
 	});
-	req.on('error', err);
-	req.end();
 };
 
-const authenticatedGetRequest = (endpoint, isExchange, auth, data, succ, err) => {
-	const authString = Buffer.from(auth.username + ":" + auth.password).toString('base64');
-	const parameters = new URLSearchParams(data);
-	const options = {
-		hostname: BASE_URL,
-		port: 443,
-		path: "/api" + (isExchange ? "/exchange/" : "/") + "1/" + endpoint + "?" + parameters.toString(),
-		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': 'Basic ' + authString
+const authenticatedGetRequest = (endpoint, isExchange, auth, data) => {
+	return new Promise((resolve, reject) => {
+		const authString = Buffer.from(auth.username + ":" + auth.password).toString('base64');
+		const parameters = new URLSearchParams(data);
+		const options = {
+			hostname: BASE_URL,
+			port: 443,
+			path: "/api" + (isExchange ? "/exchange/" : "/") + "1/" + endpoint + "?" + parameters.toString(),
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': 'Basic ' + authString
+			}
 		}
-	}
 
-	const req = http.request(options, (res) => {
-		var data = "";
-		res.on('data', (d) => {
-			data += d;
-		});
+		const req = http.request(options, (res) => {
+			var data = "";
+			res.on('data', (d) => {
+				data += d;
+			});
 
-		res.on('end', () => {
-			succ(JSON.parse(data));
+			res.on('end', () => {
+				resolve(JSON.parse(data));
+			});
 		});
+		req.on('error', reject);
+		req.end();
 	});
-	req.on('error', err);
-	req.end();
 };
 
-const postRequest = (endpoint, auth, data, succ, err) => {
-	const authString = Buffer.from(auth.username + ":" + auth.password).toString('base64');
-	const parameters = new URLSearchParams(data);
-	const options = {
-		hostname: BASE_URL,
-		port: 443,
-		path: "/api/1/" + endpoint + "?" + parameters.toString(),
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded',
-			'Authorization': 'Basic ' + authString
+const postRequest = (endpoint, auth, data) => {
+	return new Promise((resolve, reject) => {
+		const authString = Buffer.from(auth.username + ":" + auth.password).toString('base64');
+		const parameters = new URLSearchParams(data);
+		const options = {
+			hostname: BASE_URL,
+			port: 443,
+			path: "/api/1/" + endpoint + "?" + parameters.toString(),
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Authorization': 'Basic ' + authString
+			}
 		}
-	}
 
-	const req = http.request(options, (res) => {
-		var data = "";
-		res.on('data', (d) => {
-			data += d;
-		});
+		const req = http.request(options, (res) => {
+			var data = "";
+			res.on('data', (d) => {
+				data += d;
+			});
 
-		res.on('end', () => {
-			succ(JSON.parse(data));
+			res.on('end', () => {
+				resolve(JSON.parse(data));
+			});
 		});
+		req.on('error', reject);
+		req.end();
 	});
-	req.on('error', err);
-	req.end();
 };
 
 const numberToString = (num, decimals) => {
@@ -97,112 +103,104 @@ class LunoClient {
 		this.auth = { username: key, password: secret };
 	}
 
-	getPendingOrders(pair) {
-		return new Promise((resolve, reject) => {
-			authenticatedGetRequest('listorders', false, this.auth, { state: "PENDING", pair, limit: 1000 }, (response) => {
-				if (response.error_code)
-					reject(response);
-				else {
-					const pendingOrders = [];
-					if (response.orders) {
-						for (const order of response.orders) {
-							pendingOrders.push({
-								id: order.order_id,
-								type: order.type,
-								price: parseFloat(order.limit_price),
-								amount: parseFloat(order.limit_volume),
-								filled: parseFloat(order.base),
-								created: parseInt(order.creation_timestamp)
-							});
-						}
-					}
-					resolve(pendingOrders);
+	AccountTypes = {
+		Transactional: "TRANSACTIONAL",
+		Spot: "SPOT",
+		SpotMargin: "SPOT_MARGIN",
+		Savings: "SAVINGS",
+		Bundle: "BUNDLE",
+		Staking: "STAKING",
+		Earn: "EARN",
+		Prediction: "PREDICTION",
+		ExternalTokenizing: "EXTERNAL_TOKENISING"
+	};
+
+	async getPendingOrders(pair) {
+		const response = await authenticatedGetRequest('listorders', false, this.auth, { state: "PENDING", pair, limit: 1000 });
+		if (response.error_code)
+			throw response;
+		else {
+			const pendingOrders = [];
+			if (response.orders) {
+				for (const order of response.orders) {
+					pendingOrders.push({
+						id: order.order_id,
+						type: order.type,
+						price: parseFloat(order.limit_price),
+						amount: parseFloat(order.limit_volume),
+						filled: parseFloat(order.base),
+						created: parseInt(order.creation_timestamp)
+					});
 				}
-			}, reject);
-		});
+			}
+			return pendingOrders;
+		}
 	}
 
-	cancelPendingOrder(orderID) {
-		return new Promise((resolve, reject) => {
-			postRequest('stoporder', this.auth, { order_id: orderID }, (response) => {
-				if (response.error_code)
-					reject(response);
-				else
-					resolve(response);
-			}, reject);
-		});
+	async cancelPendingOrder(orderID) {
+		const response = await postRequest('stoporder', this.auth, { order_id: orderID });
+		if (response.error_code)
+			throw response;
+		else
+			return response;
 	}
 
-	getBalances() {
-		return new Promise((resolve, reject) => {
-			authenticatedGetRequest('balance', false, this.auth, {}, (response) => {
-				if (response.error_code)
-					reject(response);
-				else {
-					const balances = response.balance;
-					const wallet = {};
-					for (const walletBalance of balances) {
-						const balance = parseFloat(walletBalance.balance);
-						const reserved = parseFloat(walletBalance.reserved);
-						const available = balance - reserved;
-						wallet[walletBalance.asset] = { balance, reserved, available };
-					}
-					resolve(wallet);
-				}
-			}, reject);
-		});
+	async getBalances(accountType) {
+		const response = await authenticatedGetRequest('balance', false, this.auth, { account_type: accountType });
+		if (response.error_code)
+			throw response;
+		else {
+			const balances = response.balance;
+			const wallet = {};
+			for (const walletBalance of balances) {
+				const balance = parseFloat(walletBalance.balance);
+				const reserved = parseFloat(walletBalance.reserved);
+				const available = balance - reserved;
+				wallet[walletBalance.asset] = { balance, reserved, available };
+			}
+			return wallet;
+		}
 	}
 
-	postLimitOrder(action, amount, price, assetpair, priceDecimals, volumeDecimals) {
+	async postLimitOrder(action, amount, price, assetpair, priceDecimals, volumeDecimals) {
 		const data = {
 			pair: assetpair,
 			type: action,
 			volume: numberToString(amount, volumeDecimals),
 			price: numberToString(price, priceDecimals)
 		};
-		return new Promise((resolve, reject) => {
-			postRequest('postorder', this.auth, data, (response) => {
-				if (response.error_code)
-					reject(response);
-				else
-					resolve(response);
-			}, reject);
-		});
+		const response = await postRequest('postorder', this.auth, data);
+		if (response.error_code)
+			throw response;
+		else
+			return response;
 	}
 
-	getAllTickers() {
-		return new Promise((resolve, reject) => {
-			getRequest('tickers', false, {}, (response) => {
-				if (response.error_code)
-					reject(response);
-				else
-					resolve(response);
-			}, reject);
-		});
+	async getAllTickers() {
+		const response = await getRequest('tickers', false, {});
+		if (response.error_code)
+			throw response;
+		else
+			return response;
 	}
 
-	getTicker(pair) {
-		return new Promise((resolve, reject) => {
-			getRequest('ticker', false, { pair }, (response) => {
-				if (response.error_code)
-					reject(response);
-				else
-					resolve(response);
-			}, reject);
-		});
+	async getTicker(pair) {
+		const response = await getRequest('ticker', false, { pair });
+		if (response.error_code)
+			throw response;
+		else
+			return response;
+
 	}
 
 	getCandles(pair, startDate, endDate, duration) {
 
-		const candleRequest = (pair, since, duration) => {
-			return new Promise((resolve, reject) => {
-				authenticatedGetRequest("candles", true, this.auth, { pair, since, duration }, (response) => {
-					if (response.error_code)
-						reject(response);
-					else
-						resolve(response.candles);
-				}, reject);
-			});
+		const candleRequest = async (pair, since, duration) => {
+			const response = await authenticatedGetRequest("candles", true, this.auth, { pair, since, duration });
+			if (response.error_code)
+				throw response;
+			else
+				return response.candles;
 		};
 
 		class CandleStream extends Readable {
@@ -247,15 +245,12 @@ class LunoClient {
 		return new CandleStream(pair, startDate, endDate, duration);
 	}
 
-	getOrderBook(pair) {
-		return new Promise((resolve, reject) => {
-			getRequest("orderbook_top", false, { pair }, (response) => {
-				if (response.error_code)
-					reject(response);
-				else
-					resolve(response);
-			}, reject);
-		});
+	async getOrderBook(pair) {
+		const response = await getRequest("orderbook_top", false, { pair });
+		if (response.error_code)
+			throw response;
+		else
+			return response;
 	}
 };
 
