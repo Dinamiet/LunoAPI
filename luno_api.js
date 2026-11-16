@@ -169,6 +169,17 @@ class LunoClient {
 		}
 	}
 
+	findAccount(wallets, asset, type) {
+		let filtered = wallets;
+		if (asset)
+			filtered = filtered.filter(account => account.asset === asset);
+
+		if (type)
+			filtered = filtered.filter(account => account.type === type);
+
+		return filtered.length === 1 ? filtered[0] : filtered;
+	}
+
 	async postLimitOrder(action, amount, price, assetpair, priceDecimals, volumeDecimals) {
 		const data = {
 			pair: assetpair,
@@ -201,7 +212,6 @@ class LunoClient {
 	}
 
 	getCandles(pair, startDate, endDate, duration) {
-
 		const candleRequest = async (pair, since, duration) => {
 			const response = await authenticatedGetRequest("candles", true, this.auth, { pair, since, duration });
 			if (response.error_code)
