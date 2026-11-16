@@ -104,6 +104,7 @@ class LunoClient {
 	}
 
 	AccountTypes = {
+		All: undefined,
 		Transactional: "TRANSACTIONAL",
 		Spot: "SPOT",
 		SpotMargin: "SPOT_MARGIN",
@@ -146,17 +147,23 @@ class LunoClient {
 	}
 
 	async getBalances(accountType) {
-		const response = await authenticatedGetRequest('balance', false, this.auth, { account_type: accountType });
+		const response = await authenticatedGetRequest('balance', false, this.auth, accountType ? { account_type: accountType } : {});
 		if (response.error_code)
 			throw response;
 		else {
 			const balances = response.balance;
-			const wallet = {};
+			const wallet = [];
+			if (!Array.isArray(balances))
+				return wallet;
+
 			for (const walletBalance of balances) {
+				const id = walletBalance.account_id;
+				const asset = walletBalance.asset;
+				const type = walletBalance.account_type;
 				const balance = parseFloat(walletBalance.balance);
 				const reserved = parseFloat(walletBalance.reserved);
 				const available = balance - reserved;
-				wallet[walletBalance.asset] = { balance, reserved, available };
+				wallet.push({ id, asset, type, balance, reserved, available});
 			}
 			return wallet;
 		}
