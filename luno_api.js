@@ -169,7 +169,7 @@ class LunoClient {
 		}
 	}
 
-	findAccount(wallets, asset, type) {
+	findAccount(wallets, {asset, type}) {
 		let filtered = wallets;
 		if (asset)
 			filtered = filtered.filter(account => account.asset === asset);
