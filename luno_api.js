@@ -62,14 +62,14 @@ const authenticatedGetRequest = (endpoint, isExchange, auth, data) => {
 	});
 };
 
-const postRequest = (endpoint, auth, data) => {
+const postRequest = (endpoint, isExchange, auth, data) => {
 	return new Promise((resolve, reject) => {
 		const authString = Buffer.from(auth.username + ":" + auth.password).toString('base64');
 		const parameters = new URLSearchParams(data);
 		const options = {
 			hostname: BASE_URL,
 			port: 443,
-			path: "/api/1/" + endpoint + "?" + parameters.toString(),
+			path: "/api"+ (isExchange ? "/exchange/" : "/") + "1/" + endpoint + "?" + parameters.toString(),
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/x-www-form-urlencoded',
@@ -139,7 +139,7 @@ class LunoClient {
 	}
 
 	async cancelPendingOrder(orderID) {
-		const response = await postRequest('stoporder', this.auth, { order_id: orderID });
+		const response = await postRequest('stoporder', false, this.auth, { order_id: orderID });
 		if (response.error_code)
 			throw response;
 		else
@@ -187,7 +187,7 @@ class LunoClient {
 			volume: numberToString(amount, volumeDecimals),
 			price: numberToString(price, priceDecimals)
 		};
-		const response = await postRequest('postorder', this.auth, data);
+		const response = await postRequest('postorder', false, this.auth, data);
 		if (response.error_code)
 			throw response;
 		else
@@ -264,6 +264,27 @@ class LunoClient {
 
 	async getOrderBook(pair) {
 		const response = await getRequest("orderbook_top", false, { pair });
+		if (response.error_code)
+			throw response;
+		else
+			return response;
+	}
+
+	async getMoveStatus(id) {
+		const response = await authenticatedGetRequest('move', true, this.auth, {id});
+		if (response.error_code)
+			throw response;
+		else
+			return response;
+	}
+
+	async moveFunds(amount, from_account, to_account) {
+		const data = {
+			amount,
+			debit_account_id: from_account,
+			credit_account_id: to_account
+		};
+		const response = await postRequest('move', true, this.auth, data);
 		if (response.error_code)
 			throw response;
 		else
