@@ -62,14 +62,14 @@ const authenticatedGetRequest = (endpoint, isExchange, auth, data) => {
 	});
 };
 
-const postRequest = (endpoint, auth, data) => {
+const postRequest = (endpoint, isExchange, auth, data) => {
 	return new Promise((resolve, reject) => {
 		const authString = Buffer.from(auth.username + ":" + auth.password).toString('base64');
 		const parameters = new URLSearchParams(data);
 		const options = {
 			hostname: BASE_URL,
 			port: 443,
-			path: "/api/1/" + endpoint + "?" + parameters.toString(),
+			path: "/api"+ (isExchange ? "/exchange/" : "/") + "1/" + endpoint + "?" + parameters.toString(),
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/x-www-form-urlencoded',
@@ -104,15 +104,20 @@ class LunoClient {
 	}
 
 	AccountTypes = {
-		Transactional: "TRANSACTIONAL",
-		Spot: "SPOT",
-		SpotMargin: "SPOT_MARGIN",
-		Savings: "SAVINGS",
-		Bundle: "BUNDLE",
-		Staking: "STAKING",
-		Earn: "EARN",
-		Prediction: "PREDICTION",
-		ExternalTokenizing: "EXTERNAL_TOKENISING"
+		TRANSACTIONAL: "TRANSACTIONAL",
+		SPOT: "SPOT",
+		SPOT_MARGIN: "SPOT_MARGIN",
+		SAVINGS: "SAVINGS",
+		BUNDLE: "BUNDLE",
+		STAKING: "STAKING",
+		EARN: "EARN",
+		PREDICTION: "PREDICTION",
+		EXTERNAL_TOKENIZING: "EXTERNAL_TOKENISING"
+	};
+
+	Actions = {
+		BUY: "BID",
+		SELL: "ASK",
 	};
 
 	async getPendingOrders(pair) {
@@ -138,28 +143,43 @@ class LunoClient {
 	}
 
 	async cancelPendingOrder(orderID) {
-		const response = await postRequest('stoporder', this.auth, { order_id: orderID });
+		const response = await postRequest('stoporder', false, this.auth, { order_id: orderID });
 		if (response.error_code)
 			throw response;
 		else
 			return response;
 	}
 
-	async getBalances(accountType) {
-		const response = await authenticatedGetRequest('balance', false, this.auth, { account_type: accountType });
+	async getWallets() {
+		const response = await authenticatedGetRequest('balance', false, this.auth, {});
 		if (response.error_code)
 			throw response;
 		else {
 			const balances = response.balance;
-			const wallet = {};
+			const wallets = [];
+
 			for (const walletBalance of balances) {
+				const id = walletBalance.account_id;
+				const asset = walletBalance.asset;
+				const type = walletBalance.account_type;
 				const balance = parseFloat(walletBalance.balance);
 				const reserved = parseFloat(walletBalance.reserved);
 				const available = balance - reserved;
-				wallet[walletBalance.asset] = { balance, reserved, available };
+				wallets.push({ id, asset, type, balance, reserved, available});
 			}
-			return wallet;
+			return wallets;
 		}
+	}
+
+	findWallet(wallets, asset, type) {
+		let filtered = wallets;
+		if (asset)
+			filtered = filtered.filter(account => account.asset === asset);
+
+		if (type)
+			filtered = filtered.filter(account => account.type === type);
+
+		return filtered.length === 1 ? filtered[0] : filtered;
 	}
 
 	async postLimitOrder(action, amount, price, assetpair, priceDecimals, volumeDecimals) {
@@ -169,7 +189,7 @@ class LunoClient {
 			volume: numberToString(amount, volumeDecimals),
 			price: numberToString(price, priceDecimals)
 		};
-		const response = await postRequest('postorder', this.auth, data);
+		const response = await postRequest('postorder', false, this.auth, data);
 		if (response.error_code)
 			throw response;
 		else
@@ -194,7 +214,6 @@ class LunoClient {
 	}
 
 	getCandles(pair, startDate, endDate, duration) {
-
 		const candleRequest = async (pair, since, duration) => {
 			const response = await authenticatedGetRequest("candles", true, this.auth, { pair, since, duration });
 			if (response.error_code)
@@ -247,6 +266,27 @@ class LunoClient {
 
 	async getOrderBook(pair) {
 		const response = await getRequest("orderbook_top", false, { pair });
+		if (response.error_code)
+			throw response;
+		else
+			return response;
+	}
+
+	async getMoveStatus(id) {
+		const response = await authenticatedGetRequest('move', true, this.auth, {id});
+		if (response.error_code)
+			throw response;
+		else
+			return response;
+	}
+
+	async moveFunds(amount, from_account, to_account) {
+		const data = {
+			amount,
+			debit_account_id: from_account,
+			credit_account_id: to_account
+		};
+		const response = await postRequest('move', true, this.auth, data);
 		if (response.error_code)
 			throw response;
 		else
