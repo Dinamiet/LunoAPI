@@ -104,16 +104,20 @@ class LunoClient {
 	}
 
 	AccountTypes = {
-		All: undefined,
-		Transactional: "TRANSACTIONAL",
-		Spot: "SPOT",
-		SpotMargin: "SPOT_MARGIN",
-		Savings: "SAVINGS",
-		Bundle: "BUNDLE",
-		Staking: "STAKING",
-		Earn: "EARN",
-		Prediction: "PREDICTION",
-		ExternalTokenizing: "EXTERNAL_TOKENISING"
+		TRANSACTIONAL: "TRANSACTIONAL",
+		SPOT: "SPOT",
+		SPOT_MARGIN: "SPOT_MARGIN",
+		SAVINGS: "SAVINGS",
+		BUNDLE: "BUNDLE",
+		STAKING: "STAKING",
+		EARN: "EARN",
+		PREDICTION: "PREDICTION",
+		EXTERNAL_TOKENIZING: "EXTERNAL_TOKENISING"
+	};
+
+	Actions = {
+		BUY: "BID",
+		SELL: "ASK",
 	};
 
 	async getPendingOrders(pair) {
@@ -146,15 +150,13 @@ class LunoClient {
 			return response;
 	}
 
-	async getBalances(accountType) {
-		const response = await authenticatedGetRequest('balance', false, this.auth, accountType ? { account_type: accountType } : {});
+	async getWallets() {
+		const response = await authenticatedGetRequest('balance', false, this.auth, {});
 		if (response.error_code)
 			throw response;
 		else {
 			const balances = response.balance;
-			const wallet = [];
-			if (!Array.isArray(balances))
-				return wallet;
+			const wallets = [];
 
 			for (const walletBalance of balances) {
 				const id = walletBalance.account_id;
@@ -163,13 +165,13 @@ class LunoClient {
 				const balance = parseFloat(walletBalance.balance);
 				const reserved = parseFloat(walletBalance.reserved);
 				const available = balance - reserved;
-				wallet.push({ id, asset, type, balance, reserved, available});
+				wallets.push({ id, asset, type, balance, reserved, available});
 			}
-			return wallet;
+			return wallets;
 		}
 	}
 
-	findAccount(wallets, {asset, type}) {
+	findWallet(wallets, asset, type) {
 		let filtered = wallets;
 		if (asset)
 			filtered = filtered.filter(account => account.asset === asset);
